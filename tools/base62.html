@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base62 Encoder/Decoder</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-xl">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Base62 Encoder/Decoder</h1>
+
+        <div class="mb-6 flex gap-4">
+            <button id="encodeButton" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg flex-1 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-transparent">
+                Encode
+            </button>
+            <button id="decodeButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex-1 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-transparent">
+                Decode
+            </button>
+        </div>
+
+        <div class="mb-4">
+            <label for="inputText" class="block text-gray-700 font-medium mb-2">Input Text:</label>
+            <textarea id="inputText" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-32" placeholder="Enter text to encode or Base62 string to decode..."></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label for="outputText" class="block text-gray-700 font-medium mb-2">Output Result:</label>
+            <textarea id="outputText" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none h-32 bg-gray-50" readonly placeholder="Result will appear here"></textarea>
+        </div>
+
+        <div id="errorOutput" class="mt-4 text-red-600 font-medium"></div>
+    </div>
+
+    <script>
+        // Base62 character set
+        const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        const base62Map = {};
+        for (let i = 0; i < base62Chars.length; i++) {
+            base62Map[base62Chars[i]] = i;
+        }
+
+        function encodeBase62(text) {
+            if (!text) {
+                return { encoded: "", error: "" };
+            }
+
+            try {
+                const encoder = new TextEncoder('utf-8');
+                const bytes = encoder.encode(text);
+
+                let value = BigInt(0);
+                for (let i = 0; i < bytes.length; i++) {
+                    value = value * BigInt(256) + BigInt(bytes[i]);
+                }
+
+                let base62String = "";
+                if (value === BigInt(0)) {
+                    base62String = "0";
+                } else {
+                    let temp = value;
+                    while (temp > BigInt(0)) {
+                        base62String = base62Chars[Number(temp % BigInt(62))] + base62String;
+                        temp /= BigInt(62);
+                    }
+                }
+
+                // Handle leading zeros in bytes (which correspond to leading zeros in Base62 string)
+                let leadingZeros = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    if (bytes[i] === 0) {
+                        leadingZeros++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let i = 0; i < leadingZeros; i++) {
+                    base62String = '0' + base62String;
+                }
+
+                return { encoded: base62String, error: "" };
+            } catch (e) {
+                return { encoded: "", error: `Error encoding text to Base62: ${e.message}` };
+            }
+        }
+
+        function decodeBase62(base62String) {
+            if (!base62String) {
+                return { decoded: "", error: "" };
+            }
+
+            let value = BigInt(0);
+            let power = BigInt(1);
+            
+            for (let i = base62String.length - 1; i >= 0; i--) {
+                const char = base62String[i];
+                const charValue = base62Map[char];
+
+                if (charValue === undefined) {
+                    return { decoded: "", error: `Invalid character '${char}' in Base62 string.` };
+                }
+
+                value += BigInt(charValue) * power;
+                power *= BigInt(62);
+            }
+
+            // Convert BigInt to bytes
+            let bytes = [];
+            if (value === BigInt(0)) {
+                bytes = [0]; // Special case for 0
+            } else {
+                let temp = value;
+                while (temp > BigInt(0)) {
+                    bytes.unshift(Number(temp % BigInt(256)));
+                    temp /= BigInt(256);
+                }
+            }
+
+            // Handle leading zeros in Base62 string (which correspond to leading zero bytes)
+            let leadingZeros = 0;
+            for (let i = 0; i < base62String.length; i++) {
+                if (base62String[i] === '0') {
+                    leadingZeros++;
+                } else {
+                    break;
+                }
+            }
+            for (let i = 0; i < leadingZeros; i++) {
+                bytes.unshift(0);
+            }
+
+            // Convert bytes to UTF-8 string
+            try {
+                const decoder = new TextDecoder('utf-8');
+                const decodedString = decoder.decode(new Uint8Array(bytes));
+                return { decoded: decodedString, error: "" };
+            } catch (e) {
+                return { decoded: "", error: `Error decoding bytes to UTF-8: ${e.message}` };
+            }
+        }
+
+        document.getElementById('encodeButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            const outputText = document.getElementById('outputText');
+            const errorOutput = document.getElementById('errorOutput');
+
+            outputText.value = '';
+            errorOutput.textContent = '';
+
+            const result = encodeBase62(inputText);
+
+            if (result.error) {
+                errorOutput.textContent = result.error;
+            } else {
+                outputText.value = result.encoded;
+            }
+        });
+
+        document.getElementById('decodeButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            const outputText = document.getElementById('outputText');
+            const errorOutput = document.getElementById('errorOutput');
+
+            outputText.value = '';
+            errorOutput.textContent = '';
+
+            const result = decodeBase62(inputText);
+
+            if (result.error) {
+                errorOutput.textContent = result.error;
+            } else {
+                outputText.value = result.decoded;
+            }
+        });
+    </script>
+</body>
+</html>
