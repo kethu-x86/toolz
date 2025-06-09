@@ -1,7 +1,13 @@
 [
   {
     "name": "Base62 Encoder/Decoder",
-    "link": "base62.html",
+    "link": "tools/base62.html",
+    "icon": "settings"
+  },
+
+  {
+    "name": "Base64 Encoder/Decoder",
+    "link": "tools/base64.html",
     "icon": "settings"
   }
 ]

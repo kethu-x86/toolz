@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-xl">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Base64 Encoder/Decoder</h1>
+
+        <div class="mb-6 flex gap-4">
+            <button id="encodeButton" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg flex-1 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-transparent">
+                Encode
+            </button>
+            <button id="decodeButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex-1 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-transparent">
+                Decode
+            </button>
+        </div>
+
+        <div class="mb-4">
+            <label for="inputText" class="block text-gray-700 font-medium mb-2">Input Text:</label>
+            <textarea id="inputText" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none h-32" placeholder="Enter text to encode or Base64 string to decode..."></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label for="outputText" class="block text-gray-700 font-medium mb-2">Output Result:</label>
+            <textarea id="outputText" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none h-32 bg-gray-50" readonly placeholder="Result will appear here"></textarea>
+        </div>
+
+        <div id="errorOutput" class="mt-4 text-red-600 font-medium"></div>
+    </div>
+
+    <script>
+        function encodeBase64(text) {
+            if (!text) {
+                return { encoded: "", error: "" };
+            }
+            try {
+                // Use btoa for Base64 encoding (works on ASCII strings)
+                // For UTF-8 strings, we need to first encode to bytes
+                const encodedText = encodeURIComponent(text);
+                const utf8Bytes = unescape(encodedText).replace(/%([0-9A-F]{2})/g,
+                    function toSolidBytes(match, p1) {
+                        return String.fromCharCode('0x' + p1);
+                    });
+                const base64String = btoa(utf8Bytes);
+                return { encoded: base64String, error: "" };
+            } catch (e) {
+                return { encoded: "", error: `Error encoding text to Base64: ${e.message}` };
+            }
+        }
+
+        function decodeBase64(base64String) {
+            if (!base64String) {
+                return { decoded: "", error: "" };
+            }
+            try {
+                // Use atob for Base64 decoding
+                const utf8Bytes = atob(base64String);
+                // Convert bytes back to UTF-8 string
+                const decodedString = decodeURIComponent(utf8Bytes.split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return { decoded: decodedString, error: "" };
+            } catch (e) {
+                return { decoded: "", error: `Error decoding Base64 to text: ${e.message}` };
+            }
+        }
+
+        document.getElementById('encodeButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            const outputText = document.getElementById('outputText');
+            const errorOutput = document.getElementById('errorOutput');
+
+            outputText.value = '';
+            errorOutput.textContent = '';
+
+            const result = encodeBase64(inputText);
+
+            if (result.error) {
+                errorOutput.textContent = result.error;
+            } else {
+                outputText.value = result.encoded;
+            }
+        });
+
+        document.getElementById('decodeButton').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value;
+            const outputText = document.getElementById('outputText');
+            const errorOutput = document.getElementById('errorOutput');
+
+            outputText.value = '';
+            errorOutput.textContent = '';
+
+            const result = decodeBase64(inputText);
+
+            if (result.error) {
+                errorOutput.textContent = result.error;
+            } else {
+                outputText.value = result.decoded;
+            }
+        });
+    </script>
+</body>
+</html>
