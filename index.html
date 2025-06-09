@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tools Collection</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-100 font-inter p-8 md:p-12">
+
+  <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-800 mb-10 text-center drop-shadow-sm">🛠️ My Tools</h1>
+
+  <ul id="tools-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+    <!-- Tools will be loaded here by JavaScript -->
+  </ul>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const toolsListElement = document.getElementById('tools-list');
+
+      try {
+        // Fetch tools data from the JSON file
+        const response = await fetch('tools.json');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const toolsData = await response.json();
+
+        toolsData.forEach(tool => {
+          const listItem = document.createElement('li');
+          listItem.classList.add(
+            'bg-white', 'shadow-xl', 'rounded-2xl', 'p-7', 'border', 'border-blue-200',
+            'hover:shadow-2xl', 'transition-all', 'duration-300', 'ease-in-out'
+          );
+
+          const link = document.createElement('a');
+          link.href = tool.link;
+          link.classList.add(
+            'text-indigo-700', 'hover:text-indigo-900', 'text-xl', 'md:text-2xl',
+            'font-semibold', 'flex', 'items-center', 'gap-3'
+          );
+
+          const iconImg = document.createElement('img');
+          iconImg.src = `https://unpkg.com/lucide-static@latest/icons/${tool.icon}.svg`;
+          iconImg.alt = `${tool.icon} icon`;
+          iconImg.classList.add('w-6', 'h-6', 'text-indigo-500');
+
+          link.appendChild(iconImg);
+          link.appendChild(document.createTextNode(tool.name));
+
+          listItem.appendChild(link);
+          toolsListElement.appendChild(listItem);
+        });
+
+      } catch (error) {
+        console.error("Error fetching tools data:", error);
+        // Display an error message to the user
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = 'Failed to load tools. Please try again later.';
+        errorMessage.classList.add('text-red-500', 'text-center');
+        toolsListElement.appendChild(errorMessage);
+      }
+    });
+  </script>
+
+</body>
+</html>
